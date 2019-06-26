@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="google-signin-client_id" content="44329165683-24uag3q8muus5d683c212pdk6p1706hk.apps.googleusercontent.com">
+    <title>Hostel: Indraprastha Institute of Information Technology, Delhi</title>
+    <link href="../stylesheets/style.css" rel="stylesheet" type="text/css" />
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    <script>
+        let loader;
+        $(document).ready(function(){
+            loader= document.getElementById('loading_login');
+            loader.style.visibility="hidden";
+        });
+
+
+        function showSnackBar(message) {
+            let snackbar= document.getElementById('snackbar');
+            snackbar.innerText=message;
+            snackbar.className="show";
+            setTimeout(function(){ snackbar.className = snackbar.className.replace("show", ""); }, 6000);
+        }
+
+
+        function onSignIn(googleUser) {
+            loader.style.visibility="visible";
+            var id_token = googleUser.getAuthResponse().id_token;
+            var profile = googleUser.getBasicProfile();
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/login');
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                loader.style.visibility="hidden";
+                const resp=JSON.parse(xhr.responseText);
+                if (resp.code===0) {
+                    signOut();
+                    showSnackBar(resp.info);
+                }else if (resp.code===1) {
+                    //sign in to portal
+                    if (resp.admin === true) {
+                        window.location.replace("/admin");
+                    }else {
+                        window.location.replace("/home");
+                    }
+                }
+            };
+            xhr.send('token='+id_token+'&name='+profile.getName()+'&email='+profile.getEmail()+'&picture='+profile.getImageUrl());
+        }
+
+        function signOut() {
+            var auth2 = gapi.auth2.getAuthInstance();
+            auth2.signOut();
+            auth2.disconnect();
+        }
+    </script>
+</head>
+<body>
+
+
+
+<!--header top panel-->
+    <div class="header">
+        <!--        logo-->
+        <a href="/"><img src="../images/logo_expanded.png" style="width: 400px;"/></a>
+        <!--            google login button-->
+        <div style="float: right; margin-top: 20px; margin-right: 50px;"><div class="loading" style="float: left;" id="loading_login"></div><div class="g-signin2" data-onsuccess="onSignIn" style="float: right; margin-left: 10px;"></div></div>
+    </div>
+
+
+
+
+
+
+<div class="mainBody">
+<!--    left text on main body-->
+    <div style="margin-top: 100px; margin-bottom: 50px; margin-left: 5%; background-color: #FFFFFF; width: 55%; float: left">
+        <p class="textFormatNormal" style="font-size: 35px;">
+            Are you a day Scholar?<br><br>
+            Tired of too looong journey from home<br> to college and then back home?<br><br>
+            Not getting enough time for studies?
+        </p>
+        <p class="textFormatNormal" style="font-size:20px; line-height: 1.3;">
+            Then what are you waiting for? Back in a course?<br>
+            <b>Request for a hostel room now</b>
+        </p>
+    </div>
+
+
+    <div style="background-color: #FFFFFF; float: right; margin-top: 40px; width: 35%; margin-right: 5%;">
+        <div style="float: left; background-color: #303030; height: 500px; width: 0.5%;">
+        </div>
+
+        <div style="float: right; width: 99.5%;"><p class="textFormatNormal" style="font-size: 50px; margin-top: 200px; margin-left: 50px;">Hostel Portal</p></div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+<!--    bottom panel containing contact us, external links and copyright info-->
+    <div class="bottom_Panel">
+
+<!--        contact us panel-->
+        <div style="float: left; margin:30px 30px 30px 150px;">
+            <p class="textFormatNormal" style="font-size: 25px;">Contact Us</p>
+            <div>
+                <img src="../images/location.png" style="height: 20px; width: 20px; margin-top: 15px; position:absolute; "/>
+                <a href="https://www.google.com/maps/place/Indraprastha+Institute+of+Information+Technology+Delhi/@28.5508664,77.258445,13.93z/data=!4m12!1m6!3m5!1s0x390ce3e564daac1d:0x2c582e340e7bc556!2sIndraprastha+Institute+of+Information+Technology+Delhi!8m2!3d28.5456282!4d77.2731505!3m4!1s0x390ce3e564daac1d:0x2c582e340e7bc556!8m2!3d28.5456282!4d77.2731505" target="_blank" class="textFormatLink" style="font-size: 16px; left: 30px; position: relative;">
+                    Indraprastha Institute of Information Technology, Delhi<br> Okhla Industrial Estate Phase 3 Rd<br> New Delhi, 110020
+                </a>
+            </div>
+            <div style="margin-top: 20px;">
+                <img src="../images/email.png" style="position:absolute; height: 15px; width: 15px;">
+                <a href="mailto:admin-hostel@iiitd.ac.in" target="_blank" class="textFormatLink" style="font-size: 16px; left: 30px; position: relative;">
+                    admin-hostel@iiitd.ac.in
+                </a>
+            </div>
+            <div style="margin-top: 20px;">
+                <img src="../images/website.png" style="position:absolute; height: 15px; width: 15px;">
+                <a href="https://www.iiitd.ac.in/life/hostels" target="_blank" class="textFormatLink" style="font-size: 16px; left: 30px; position: relative;">
+                    IIITD Hostel Website
+                </a>
+            </div>
+        </div>
+
+<!-- external links-->
+        <div style="float: right; margin: 30px 150px 30px 30px;">
+            <p class="textFormatNormal" style="font-size: 25px;">External Links</p>
+            <p style="line-height: 1.2; margin-left: 20px;">
+                <a href="https://www.iiitd.ac.in/life/hostels/about-hostels" target="_blank" class="textFormatLink" style="font-size: 16px;">About Hostels</a><br>
+                <a href="https://www.iiitd.ac.in/life/hostels/hostel-policies" target="_blank" class="textFormatLink" style="font-size: 16px;">Hostel Policies</a><br>
+                <a href="https://www.iiitd.ac.in/life/hostels/hostel-policies" target="_blank" class="textFormatLink" style="font-size: 16px;">Allocation Policies</a><br>
+                <a href="http://iiitd.ac.in/" target="_blank" class="textFormatLink" style="font-size: 16px;">IIITD Website</a>
+            </p>
+        </div>
+
+<!--        copyright    -->
+        <div style="text-align: center; float: right; width: 100%;">
+            <p class="textFormatNormal" style="font-size: 16px;">&copy 2019 Indraprastha Institute of Information Technology, Delhi</p>
+        </div>
+    </div>
+
+
+
+
+<div id="snackbar"></div>
+</body>
+</html>

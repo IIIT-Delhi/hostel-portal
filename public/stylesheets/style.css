@@ -1,0 +1,164 @@
+body {
+  margin: 0;
+  background-color: #FFF;
+}
+
+@font-face {
+  font-family: roboto-regular;
+  src: url("../font/Roboto-Regular.ttf");
+}
+
+@font-face {
+  font-family: comfortaa;
+  src: url("../font/Comfortaa.ttf");
+}
+
+/*head panel*/
+.header {
+  background-color: #FFF;
+  width: 100%;
+}
+
+/* bottom black panel */
+.bottom_Panel {
+  float: right;
+  width: 100%;
+}
+
+.mainBody {
+  width: 100%;
+  float: left;
+  background-color: #FFF;
+}
+
+.textFormatNormal {
+  color: #303030;
+  font-family: comfortaa,sans-serif;
+}
+
+.textFormatLink {
+  color: #303030;
+  font-family: comfortaa, sans-serif;
+  text-decoration: none;
+}
+.textFormatLink:hover {
+  text-decoration: underline;
+}
+
+.loading {
+  border: 4px solid #FFFFFF; /* Light grey */
+  border-top: 4px solid #303030; /* Blue */
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+#snackbar {
+  visibility: hidden; /* Hidden by default. Visible on click */
+  min-width: 250px; /* Set a default minimum width */
+  margin-left: -125px; /* Divide value of min-width by 2 */
+  background-color: #303030; /* Black background color */
+  color: #fff; /* White text color */
+  text-align: center; /* Centered text */
+  border-radius: 5px; /* Rounded borders */
+  padding: 16px; /* Padding */
+  position: fixed; /* Sit on top of the screen */
+  z-index: 1; /* Add a z-index if needed */
+  left: 50%; /* Center the snackbar */
+  bottom: 30px; /* 30px from the bottom */
+  font-family: comfortaa, sans-serif;
+}
+
+/* Show the snackbar when clicking on a button (class added with JavaScript) */
+#snackbar.show {
+  visibility: visible; /* Show the snackbar */
+  /* Add animation: Take 0.5 seconds to fade in and out the snackbar.
+  However, delay the fade out process for 2.5 seconds */
+  -webkit-animation: fadein 0.5s, fadeout 0.5s 5.5s;
+  animation: fadein 0.5s, fadeout 0.5s 5.5s;
+}
+
+/* Animations to fade the snackbar in and out */
+@-webkit-keyframes fadein {
+  from {bottom: 0; opacity: 0;}
+  to {bottom: 30px; opacity: 1;}
+}
+
+@keyframes fadein {
+  from {bottom: 0; opacity: 0;}
+  to {bottom: 30px; opacity: 1;}
+}
+
+@-webkit-keyframes fadeout {
+  from {bottom: 30px; opacity: 1;}
+  to {bottom: 0; opacity: 0;}
+}
+
+@keyframes fadeout {
+  from {bottom: 30px; opacity: 1;}
+  to {bottom: 0; opacity: 0;}
+}
+
+.top_panel_link_box {
+  float: left;
+  min-width: 80px;
+  margin-left: 10px;
+  padding: 10px 15px 10px 15px;
+  text-align: center;
+  border-radius: 25px;
+  background-color: #f8f9f7;
+  color: #303030;
+  cursor: pointer;
+  font-family: comfortaa, sans-serif;
+  font-size: 15px;
+}
+
+.top_panel_link_box:hover {
+  color: #303030;
+  background-color: #ffeeee;
+  transition: 0.5s ease;
+}
+
+.top_panel_link_box_active {
+  float: left;
+  min-width: 80px;
+  margin-left: 10px;
+  padding: 10px 15px 10px 15px;
+  text-align: center;
+  border-radius: 25px;
+  background-color: #ffeeee;
+  color: #303030;
+  cursor: pointer;
+  font-family: comfortaa, sans-serif;
+  font-size: 15px;
+}
+
+.top_panel_link_box_disable {
+  float: left;
+  min-width: 80px;
+  margin-left: 10px;
+  padding: 10px 15px 10px 15px;
+  text-align: center;
+  border-radius: 25px;
+  background-color: #f1eeee;
+  color: #adaaaa;
+  cursor: default;
+  font-family: comfortaa, sans-serif;
+  font-size: 15px;
+}
+
+.previous_request_box {
+  width: 100%;
+  border: 1px solid #e1e4dd;
+  border-radius: 10px;
+  margin-top: 50px;
+  float: left;
+  font-family: comfortaa, sans-serif;
+}

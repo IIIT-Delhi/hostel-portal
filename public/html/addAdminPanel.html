@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="google-signin-client_id" content="44329165683-24uag3q8muus5d683c212pdk6p1706hk.apps.googleusercontent.com">
+    <title>Add Admin: Hostel Portel IIITD</title>
+    <link href="../stylesheets/style.css" rel="stylesheet" type="text/css" />
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+
+    <script>
+        let userinfo;
+        $(document).ready(function(){
+            document.getElementById('add_admin_div').style.display="none";
+        });
+
+        function goBack() {
+            window.location.replace("/admin");
+        }
+
+        function addNewAdmin() {
+            const email=document.getElementById('email_new').value.trim();
+            if (email==="") {
+                showSnackBar("Enter Email ID");
+            }else {
+                document.getElementById('loading').style.visibility="visible";
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/addAdmin');
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function () {
+                    document.getElementById('loading').style.visibility = "hidden";
+                    const resp = JSON.parse(xhr.responseText);
+                    if (resp.code === 1) {
+                        showSnackBar(resp.info+" Redirecting in 3 sec");
+                        setTimeout(function () {
+                            goBack();
+                        }, 3000);
+                    }else {
+                        showSnackBar(resp.info);
+                    }
+                };
+                xhr.send("email=" + userinfo.email + "&add_email=" + email);
+            }
+        }
+
+        function displayData() {
+            document.getElementById('loading_div').style.display = "none";
+            document.getElementById('username').innerText = userinfo.name.trim();
+            const _img = document.getElementById('picture');
+            const newImg = new Image;
+            newImg.onload = function () {
+                _img.src = this.src;
+            };
+            newImg.src = userinfo.picture;
+            document.getElementById('loading').style.visibility = "hidden";
+            document.getElementById('add_admin_div').style.display="block";
+        }
+            function showSnackBar(message) {
+            let snackbar= document.getElementById('snackbar');
+            snackbar.innerText=message;
+            snackbar.className="show";
+            setTimeout(function(){ snackbar.className = snackbar.className.replace("show", ""); }, 6000);
+        }
+
+        function onSignIn(googleUser) {
+            var profile = googleUser.getBasicProfile();
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/adminAccountInfo');
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                userinfo=JSON.parse(xhr.responseText);
+                console.log(xhr.responseText);
+                displayData();
+            };
+            xhr.send("email="+profile.getEmail());
+        }
+
+
+        function signOut() {
+            document.getElementById('loading').style.visibility="visible";
+            var auth2 = gapi.auth2.getAuthInstance();
+            auth2.signOut();
+            auth2.disconnect();
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/logout');
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                document.getElementById('loading').style.visibility="hidden";
+                const resp=JSON.parse(xhr.responseText);
+                if (resp.code===1) {
+                    window.location.replace("/");
+                }else {
+                    showSnackBar(resp.info);
+                }
+            };
+            xhr.send();
+        }
+    </script>
+</head>
+<body>
+
+<!--        //google signin-->
+<div class="g-signin2" data-onsuccess="onSignIn" style="display: none;"></div>
+
+
+<div class="header">
+    <div style="float: left; margin-left: 1%;">
+        <div style="cursor: pointer; font-size: 20px; margin-top: 18px; float: left;" onclick="refresh()" class="textFormatNormal">Hostel Portal</div>
+
+        <div style="float: right; margin-left:30px; margin-top: 10px;">
+            <div class="top_panel_link_box_active" id="add_admin_chip" onclick="addAdmin()">Add Admin</div>
+            <div class="top_panel_link_box" id="go_back_chip" onclick="goBack()">Back to Admin Panel</div>
+        </div>
+    </div>
+
+    <!--        logout button-->
+    <div style="float: right; margin-top: 10px; margin-right: 3%;">
+        <div style="float: left;">
+            <div class="loading" style="float: left;" id="loading"></div>
+            <img style="float:left; height: 30px; width: 30px; border-radius: 50%; margin-left: 20px;" id="picture">
+            <div style="float: right; margin-top: 8px; margin-left: 10px;" class="textFormatNormal" id="username"></div>
+        </div>
+        <div style="float: right; cursor: pointer; margin-top: 8px; margin-left: 40px;" onclick="signOut()" class="textFormatLink">Logout</div>
+    </div>
+</div>
+
+
+<div class="mainBody">
+    <div id="loading_div" style="border: 1px solid #e1e4dd; border-radius: 10px; width: 70%; margin-left: 15%;  margin-top: 170px; float: left;">
+        <p style="text-align: center; font-size: 40px; " class="textFormatNormal">Please wait while we load your profile</p>
+    </div>
+
+    <div id="add_admin_div" style="border: 1px solid #e1e4dd; border-radius: 10px; width: 70%; margin-left: 15%;  margin-top: 70px; float: left;">
+        <p style="text-align: center; font-size: 40px; " class="textFormatNormal">Add Admin</p>
+        <div style="width: 44%; float: left; margin-left: 28%; margin-top: 20px; margin-bottom: 50px;" class="textFormatNormal">
+            <div style="float: left; margin-top: 8px; font-size: 22px;">Email ID: </div>
+            <div style="float: right; margin-left: 10px;">
+                <input type="text" class="textFormatNormal" style="padding: 10px; font-size: 22px; border-radius: 5px; border: 1px solid #f0f1ef;" placeholder="Email Address" id="email_new"><br>
+            </div>
+        </div>
+
+        <div style="font-size: 25px; width: 50%; float: left; margin-left: 25%; margin-bottom: 50px;">
+            <button style="width: 49%; border: 1px solid #303030; padding: 15px; background-color: #303030; border-radius: 10px; font-size: 20px; color: #34d870;" class="textFormatNormal" onclick="addNewAdmin()">Add</button>
+            <button style="width: 49%; border: 1px solid #303030; padding: 15px; background-color: #303030; border-radius: 10px; font-size: 20px; color: #ff4848;" class="textFormatNormal" onclick="goBack()">Cancel</button>
+        </div>
+</div>
+
+
+
+<div class="bottom_Panel" style="margin-top: 100px;">
+    <!--        copyright    -->
+    <div style="text-align: center; float: right; width: 100%;">
+        <p class="textFormatNormal" style="font-size: 16px;">&copy 2019 Indraprastha Institute of Information Technology, Delhi</p>
+    </div>
+
+    <div style="float: right;">
+    </div>
+</div>
+
+<div id="snackbar"></div>
+</body>
+</html>

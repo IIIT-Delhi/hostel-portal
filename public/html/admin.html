@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="google-signin-client_id" content="44329165683-24uag3q8muus5d683c212pdk6p1706hk.apps.googleusercontent.com">
+    <title>Admin Panel: Indraprastha Institute of Information Technology</title>
+    <link href="../stylesheets/style.css" rel="stylesheet" type="text/css" />
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+
+    <script>
+        let userinfo;
+        let new_request_button_status=0;
+        let recent_request_button_status=0;
+
+        $(document).ready(function(){
+            document.getElementById('new_requests_div').style.display="none";
+            document.getElementById('recent_requests_div').style.display="none";
+            document.getElementById('nothing_to_show_div').style.display="none";
+        });
+
+        function addAdmin() {
+            window.location.replace("/addAdminPanel");
+        }
+        
+        
+        function respondToRequest(status, id) {
+            window.scrollTo(0, 0);
+            document.getElementById('loading').style.visibility="visible";
+            if (status===0) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/rejectRequest');
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function() {
+                    document.getElementById('loading').style.visibility="hidden";
+                    const resp=JSON.parse(xhr.responseText);
+                    showSnackBar(resp.info);
+                    if (resp.code===1) {
+                        refresh()
+                    }
+                };
+                xhr.send("email="+userinfo.email+"&id="+id+"&name="+userinfo.name);
+            }else if (status===1) {
+
+            }
+        }
+
+        function newRequests() {
+            if (new_request_button_status===1) {
+                document.getElementById('new_requests_div').style.display="block";
+                document.getElementById('recent_requests_div').style.display="none";
+                document.getElementById('new_request_hostel_chip').className="top_panel_link_box_active";
+                if (recent_request_button_status===1) {
+                    document.getElementById('recent_request_chip').className="top_panel_link_box";
+                }
+            }else {
+                showSnackBar("No New Requests !");
+            }
+        }
+        
+        function recentRequests() {
+            if (recent_request_button_status===1) {
+                document.getElementById('new_requests_div').style.display="none";
+                document.getElementById('recent_requests_div').style.display="block";
+                document.getElementById('recent_request_chip').className="top_panel_link_box_active";
+                if (new_request_button_status===1) {
+                    document.getElementById('new_request_hostel_chip').className="top_panel_link_box";
+                }
+            }else {
+                showSnackBar("No Recently Handled Requests !");
+            }
+        }
+        
+        function allRequests() {
+            //all requests
+        }
+        
+        function changeSemester() {
+            if (confirm("Are you sure you want to change semester? Changing semester will result in move of all current room holder into past room holders.")) {
+                document.getElementById('loading').style.visibility="visible";
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/changeSemester');
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function() {
+                    document.getElementById('loading').style.visibility="hidden";
+                    const resp=JSON.parse(xhr.responseText);
+                    if (resp.code===1) {
+                        showSnackBar(resp.info+" Refreshing...");
+                        setTimeout(function () {
+                            refresh();
+                        },2000);
+                    }else {
+                        showSnackBar(resp.info);
+                    }
+                };
+                xhr.send("email="+userinfo.email);
+            }
+        }
+
+        function showSnackBar(message) {
+            let snackbar= document.getElementById('snackbar');
+            snackbar.innerText=message;
+            snackbar.className="show";
+            setTimeout(function(){ snackbar.className = snackbar.className.replace("show", ""); }, 6000);
+        }
+
+        function displayData() {
+            document.getElementById('loading_div').style.display = "none";
+            document.getElementById('username').innerText = userinfo.name.trim();
+            const _img = document.getElementById('picture');
+            const newImg = new Image;
+            newImg.onload = function () {
+                _img.src = this.src;
+            };
+            newImg.src = userinfo.picture;
+            document.getElementById('loading').style.visibility = "hidden";
+
+            let new_requests_str="";
+            let recent_requests_str="";
+            for (let i=0;i<userinfo.requests.length;i++) {
+                let status;
+                let color;
+                let hostel;
+                let room_alloc;
+                if (userinfo.requests[i].status===0) {
+                    new_request_button_status=1;
+                    status="Pending...";
+                    color="#f3b54a";
+                    hostel=userinfo.requests[i].prefered_hostel;
+                    room_alloc=".";
+                    new_requests_str=new_requests_str+'<div class="previous_request_box">\n' +
+                        '                <div style="float: left;">\n' +
+                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 40px;" class="textFormatNormal">\n' +
+                        '                        <div style="float: left; font-size: 18px; width: 40%;">Request by </div>\n' +
+                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' + userinfo.requests[i].name+
+                        '                        </div>\n' +
+                        '                    </div>\n' +
+                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
+                        '                        <div style="float: left; font-size: 18px; width: 40%;"></div>\n' +
+                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 14px; color:'+color+';">\n' + userinfo.requests[i].email+
+                        '                        </div>\n' +
+                        '                    </div>\n' +
+                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
+                        '                        <div style="float: left; font-size: 18px; width: 40%;">Request date </div>\n' +
+                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' + userinfo.requests[i].request_time+
+                        '                        </div>\n' +
+                        '                    </div>\n' +
+                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
+                        '                        <div style="float: left; font-size: 18px; width: 40%;">Semester </div>\n' +
+                        '                        <div style="float: right;margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +userinfo.requests[i].semester+
+                        '                        </div>\n' +
+                        '                    </div>\n' +
+                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
+                        '                        <div style="float: left; font-size: 18px; width: 40%;">Hostel </div>\n' +
+                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +hostel+
+                        '                        </div>\n' +
+                        '                    </div>\n' +
+                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;margin-bottom: 40px;" class="textFormatNormal">\n' +
+                        '                        <div style="float: left; font-size: 18px; width: 40%;">Room Type </div>\n' +
+                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +userinfo.requests[i].type+
+                        '                        </div>\n' +
+                        '                    </div>\n' +
+                                            '<div style="font-size: 25px; width: 80%; float: left; margin-left: 10%; margin-bottom: 50px;">\n' +
+                                        '            <button style="width: 49%; border: 1px solid #303030; padding: 15px; background-color: #303030; border-radius: 10px; font-size: 20px; color: #34d870;" class="textFormatNormal" onclick="respondToRequest(1,'+userinfo.requests[i].id+')">Approve</button>\n' +
+                                                    '<button style="width: 49%; border: 1px solid #303030; padding: 15px; background-color: #303030; border-radius: 10px; font-size: 20px; color: #ff4848;" class="textFormatNormal" onclick="respondToRequest(0, '+userinfo.requests[i].id+')">Reject</button>\n' +
+                                        '        </div>'+
+                        '                </div>\n' +
+                        '            </div>';
+                }else if (userinfo.requests[i].status===1 || userinfo.requests[i].status===3) {
+                    recent_request_button_status=1;
+                    if (userinfo.requests[i].status===1) {
+                        status="Approved";
+                        color="#34d870";
+                        hostel=userinfo.requests[i].hostel_allocated;
+                        room_alloc=userinfo.requests[i].room_allocated;
+                    }else if (userinfo.requests[i].status===3) {
+                        status="Rejected";
+                        color="#ec4444";
+                        hostel=userinfo.requests[i].prefered_hostel;
+                        room_alloc=".";
+                    }
+                    recent_requests_str+='<div class="previous_request_box">\n' +
+                        '                <div style="float: right; margin-top: 10px; margin-right: 10px; font-size: 18px; color:'+color+';"><b>'+status+'</b></div>\n' +
+                        '                <div style="float: left;">\n' +
+                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
+                        '                        <div style="float: left; font-size: 18px; width: 40%;">Request date </div>\n' +
+                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' + userinfo.requests[i].request_time+
+                        '                        </div>\n' +
+                        '                    </div>\n' +
+                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
+                        '                        <div style="float: left; font-size: 18px; width: 40%;">Semester </div>\n' +
+                        '                        <div style="float: right;margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +userinfo.requests[i].semester+
+                        '                        </div>\n' +
+                        '                    </div>\n' +
+                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
+                        '                        <div style="float: left; font-size: 18px; width: 40%;">Hostel </div>\n' +
+                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +hostel+
+                        '                        </div>\n' +
+                        '                    </div>\n' +
+                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
+                        '                        <div style="float: left; font-size: 18px; width: 40%;">Room Type </div>\n' +
+                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +userinfo.requests[i].type+
+                        '                        </div>\n' +
+                        '                    </div>\n' +
+                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
+                        '                        <div style="float: left; font-size: 18px; width: 40%;">Room Allocated </div>\n' +
+                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +room_alloc+
+                        '                        </div>\n' +
+                        '                    </div>\n' +
+                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
+                        '                        <div style="float: left; font-size: 18px; width: 40%;">Reviewed On </div>\n' +
+                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +userinfo.requests[i].reviewed_on+
+                        '                        </div>\n' +
+                        '                    </div>\n' +
+                        '                   <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
+                        '                        <div style="float: left; font-size: 18px; width: 40%;">Reviewed by </div>\n' +
+                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +userinfo.requests[i].reviewed_by_name+
+                        '                        </div>\n' +
+                        '                    </div>\n' +
+                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px; margin-bottom: 40px;" class="textFormatNormal">\n' +
+                        '                        <div style="float: left; font-size: 18px; width: 40%;"></div>\n' +
+                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 14px; color:'+color+';">\n' +userinfo.requests[i].reviewed_by_email+
+                        '                        </div>\n' +
+                        '                    </div>\n' +
+                        '                </div>\n' +
+                        '            </div>';
+                }
+            }
+
+            document.getElementById('container_new_requests_div').innerHTML=new_requests_str;
+            document.getElementById('container_recent_requests_div').innerHTML=recent_requests_str;
+
+            if (new_request_button_status===1) {
+                document.getElementById('new_requests_div').style.display="block";
+                document.getElementById('new_request_hostel_chip').className="top_panel_link_box_active";
+                if (recent_request_button_status===1) {
+                    document.getElementById('recent_request_chip').className="top_panel_link_box";
+                }
+            }else if (recent_request_button_status===1) {
+                document.getElementById('recent_requests_div').style.display="block";
+                document.getElementById('recent_request_chip').className="top_panel_link_box_active";
+            }else {
+                document.getElementById('nothing_to_show_div').style.display="block";
+            }
+        }
+
+
+        function onSignIn(googleUser) {
+            var profile = googleUser.getBasicProfile();
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/adminAccountInfo');
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                userinfo=JSON.parse(xhr.responseText);
+                console.log(xhr.responseText);
+                displayData();
+            };
+            xhr.send("email="+profile.getEmail());
+        }
+
+
+        function signOut() {
+            document.getElementById('loading').style.visibility="visible";
+            var auth2 = gapi.auth2.getAuthInstance();
+            auth2.signOut();
+            auth2.disconnect();
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/logout');
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                document.getElementById('loading').style.visibility="hidden";
+                const resp=JSON.parse(xhr.responseText);
+                if (resp.code===1) {
+                    window.location.replace("/");
+                }else {
+                    showSnackBar(resp.info);
+                }
+            };
+            xhr.send();
+        }
+
+        function refresh() {
+            window.location.replace("/admin");
+        }
+    </script>
+</head>
+<body>
+<!--        //google signin-->
+<div class="g-signin2" data-onsuccess="onSignIn" style="display: none;"></div>
+
+
+<div class="header">
+    <div style="float: left; margin-left: 1%;">
+        <div style="cursor: pointer; font-size: 20px; margin-top: 18px; float: left;" onclick="refresh()" class="textFormatNormal">Hostel Portal</div>
+
+        <div style="float: right; margin-left:30px; margin-top: 10px;">
+            <div class="top_panel_link_box_disable" id="new_request_hostel_chip" onclick="newRequests()">New Requests</div>
+            <div class="top_panel_link_box_disable" id="recent_request_chip" onclick="recentRequests()">Recent Requests</div>
+            <div class="top_panel_link_box" id="previous_request_chip" onclick="allRequests()">All Requests</div>
+            <div class="top_panel_link_box" id="change_semseter_chip" onclick="changeSemester()">Change Semester</div>
+            <div class="top_panel_link_box" id="add_admin_chip" onclick="addAdmin()">Add Admin</div>
+        </div>
+    </div>
+
+    <!--        logout button-->
+    <div style="float: right; margin-top: 10px; margin-right: 3%;">
+        <div style="float: left;">
+            <div class="loading" style="float: left;" id="loading"></div>
+            <img style="float:left; height: 30px; width: 30px; border-radius: 50%; margin-left: 20px;" id="picture">
+            <div style="float: right; margin-top: 8px; margin-left: 10px;" class="textFormatNormal" id="username"></div>
+        </div>
+        <div style="float: right; cursor: pointer; margin-top: 8px; margin-left: 40px;" onclick="signOut()" class="textFormatLink">Logout</div>
+    </div>
+</div>
+
+
+
+<div class="mainBody">
+
+
+    <div id="loading_div" style="border: 1px solid #e1e4dd; border-radius: 10px; width: 70%; margin-left: 15%;  margin-top: 170px; float: left;">
+        <p style="text-align: center; font-size: 40px; " class="textFormatNormal">Please wait while we load your profile</p>
+    </div>
+
+
+    <div id="new_requests_div" style="border: 0px solid #e1e4dd; border-radius: 10px; width: 50%; margin-left: 25%;  margin-top: 70px; float: left;">
+        <p style="text-align: center; font-size: 40px; " class="textFormatNormal">New Requests</p>
+        <div id="container_new_requests_div" style="width: 100%;">
+        </div>
+    </div>
+
+    <div id="recent_requests_div" style="border: 0px solid #e1e4dd; border-radius: 10px; width: 50%; margin-left: 25%;  margin-top: 70px; float: left;">
+        <p style="text-align: center; font-size: 40px; " class="textFormatNormal">Recent Requests</p>
+        <div id="container_recent_requests_div" style="width: 100%;">
+        </div>
+    </div>
+
+    <div id="nothing_to_show_div" style="border: 1px solid #e1e4dd; border-radius: 10px; width: 70%; margin-left: 15%;  margin-top: 170px; float: left;">
+        <p style="text-align: center; font-size: 40px; " class="textFormatNormal">no new or recent requests !</p>
+    </div>
+</div>
+
+
+<div class="bottom_Panel" style="margin-top: 100px;">
+    <!--        copyright    -->
+    <div style="text-align: center; float: right; width: 100%;">
+        <p class="textFormatNormal" style="font-size: 16px;">&copy 2019 Indraprastha Institute of Information Technology, Delhi</p>
+    </div>
+    
+    <div style="float: right;">
+    </div>
+</div>
+
+
+
+<div id="snackbar"></div>
+</body>
+</html>
