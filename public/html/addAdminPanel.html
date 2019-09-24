@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="google-signin-client_id" content="44329165683-24uag3q8muus5d683c212pdk6p1706hk.apps.googleusercontent.com">
+    <meta name="google-signin-client_id" content="254987550321-ej72qqgf14aukermqq3aeass0br4vf3n.apps.googleusercontent.com">
     <title>Add Admin: Hostel Portel IIITD</title>
     <link href="../stylesheets/style.css" rel="stylesheet" type="text/css" />
     <script src="https://apis.google.com/js/platform.js" async defer></script>
@@ -19,6 +19,11 @@
             window.location.replace("/admin");
         }
 
+        function refresh() {
+            window.location.replace("/admin");
+        }
+
+        //add new admin  and place request to server
         function addNewAdmin() {
             const email=document.getElementById('email_new').value.trim();
             if (email==="") {
@@ -40,29 +45,34 @@
                         showSnackBar(resp.info);
                     }
                 };
-                xhr.send("email=" + userinfo.email + "&add_email=" + email);
+                xhr.send("email=" + userinfo.user.email + "&add_email=" + email);
             }
         }
 
+        //display page data
         function displayData() {
             document.getElementById('loading_div').style.display = "none";
-            document.getElementById('username').innerText = userinfo.name.trim();
+            document.getElementById('username').innerText = userinfo.user.name.trim();
             const _img = document.getElementById('picture');
             const newImg = new Image;
             newImg.onload = function () {
                 _img.src = this.src;
             };
-            newImg.src = userinfo.picture;
+            newImg.src = userinfo.user.picture;
             document.getElementById('loading').style.visibility = "hidden";
             document.getElementById('add_admin_div').style.display="block";
         }
-            function showSnackBar(message) {
+
+
+        //show message at the bottom of the screen
+        function showSnackBar(message) {
             let snackbar= document.getElementById('snackbar');
             snackbar.innerText=message;
             snackbar.className="show";
             setTimeout(function(){ snackbar.className = snackbar.className.replace("show", ""); }, 6000);
         }
 
+        // https://developers.google.com/identity/sign-in/web/sign-in       for google signin
         function onSignIn(googleUser) {
             var profile = googleUser.getBasicProfile();
             var xhr = new XMLHttpRequest();
@@ -70,13 +80,12 @@
             xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
             xhr.onload = function() {
                 userinfo=JSON.parse(xhr.responseText);
-                console.log(xhr.responseText);
                 displayData();
             };
             xhr.send("email="+profile.getEmail());
         }
 
-
+        // https://developers.google.com/identity/sign-in/web/sign-in       for google signout
         function signOut() {
             document.getElementById('loading').style.visibility="visible";
             var auth2 = gapi.auth2.getAuthInstance();
@@ -152,9 +161,6 @@
     <!--        copyright    -->
     <div style="text-align: center; float: right; width: 100%;">
         <p class="textFormatNormal" style="font-size: 16px;">&copy 2019 Indraprastha Institute of Information Technology, Delhi</p>
-    </div>
-
-    <div style="float: right;">
     </div>
 </div>
 

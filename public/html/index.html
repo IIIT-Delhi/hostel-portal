@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="google-signin-client_id" content="44329165683-24uag3q8muus5d683c212pdk6p1706hk.apps.googleusercontent.com">
+    <meta name="google-signin-client_id" content="254987550321-ej72qqgf14aukermqq3aeass0br4vf3n.apps.googleusercontent.com">
     <title>Hostel: Indraprastha Institute of Information Technology, Delhi</title>
     <link href="../stylesheets/style.css" rel="stylesheet" type="text/css" />
     <script src="https://apis.google.com/js/platform.js" async defer></script>
@@ -15,7 +15,7 @@
             loader.style.visibility="hidden";
         });
 
-
+        //show message at the bottom of the screen
         function showSnackBar(message) {
             let snackbar= document.getElementById('snackbar');
             snackbar.innerText=message;
@@ -23,7 +23,7 @@
             setTimeout(function(){ snackbar.className = snackbar.className.replace("show", ""); }, 6000);
         }
 
-
+        // https://developers.google.com/identity/sign-in/web/sign-in    for google signin
         function onSignIn(googleUser) {
             loader.style.visibility="visible";
             var id_token = googleUser.getAuthResponse().id_token;
@@ -50,6 +50,7 @@
             xhr.send('token='+id_token+'&name='+profile.getName()+'&email='+profile.getEmail()+'&picture='+profile.getImageUrl());
         }
 
+        // https://developers.google.com/identity/sign-in/web/sign-in    for google signout
         function signOut() {
             var auth2 = gapi.auth2.getAuthInstance();
             auth2.signOut();

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="google-signin-client_id" content="44329165683-24uag3q8muus5d683c212pdk6p1706hk.apps.googleusercontent.com">
+    <meta name="google-signin-client_id" content="254987550321-ej72qqgf14aukermqq3aeass0br4vf3n.apps.googleusercontent.com">
     <title>Admin Panel: Indraprastha Institute of Information Technology</title>
     <link href="../stylesheets/style.css" rel="stylesheet" type="text/css" />
     <script src="https://apis.google.com/js/platform.js" async defer></script>
@@ -12,23 +12,29 @@
     <script>
         let userinfo;
         let new_request_button_status=0;
-        let recent_request_button_status=0;
+        let approved_request_button_status=0;
+        let rejected_request_button_status=0;
+        let approved_request_json=[];
+        let rejected_request_json=[];
 
         $(document).ready(function(){
             document.getElementById('new_requests_div').style.display="none";
-            document.getElementById('recent_requests_div').style.display="none";
+            document.getElementById('rejected_requests_div').style.display="none";
+            document.getElementById('approved_requests_div').style.display="none";
             document.getElementById('nothing_to_show_div').style.display="none";
+            document.getElementById('semester_info').style.display="none";
+            document.getElementById('fees_info').style.display="none";
         });
 
         function addAdmin() {
             window.location.replace("/addAdminPanel");
         }
         
-        
+        //approve or reject a student requests
         function respondToRequest(status, id) {
-            window.scrollTo(0, 0);
-            document.getElementById('loading').style.visibility="visible";
             if (status===0) {
+                window.scrollTo(0, 0);
+                document.getElementById('loading').style.visibility="visible";
                 var xhr = new XMLHttpRequest();
                 xhr.open('POST', '/rejectRequest');
                 xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -40,64 +46,340 @@
                         refresh()
                     }
                 };
-                xhr.send("email="+userinfo.email+"&id="+id+"&name="+userinfo.name);
+                xhr.send("email="+userinfo.user.email+"&id="+id+"&name="+userinfo.user.name);
             }else if (status===1) {
-
+                const hostel_sel=document.getElementById('hostel_alloc_'+id);
+                let hostel= hostel_sel.options[hostel_sel.selectedIndex].value.trim();
+                let room= document.getElementById('room_alloc_'+id).value.trim();
+                if (hostel==="0") {
+                    showSnackBar("Select Hostel to Allocate!");
+                }else if (room==="") {
+                    showSnackBar("Enter Room Number to Allocate!");
+                }else {
+                    window.scrollTo(0, 0);
+                    document.getElementById('loading').style.visibility="visible";
+                    xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/approveRequest');
+                    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                    xhr.onload = function() {
+                        document.getElementById('loading').style.visibility="hidden";
+                        const resp=JSON.parse(xhr.responseText);
+                        showSnackBar(resp.info);
+                        if (resp.code===1) {
+                            refresh()
+                        }
+                    };
+                    xhr.send("email="+userinfo.user.email+"&id="+id+"&name="+userinfo.user.name+"&room_allocated="+room+"&hostel_allocated="+hostel);
+                }
             }
         }
 
+        //load new requests
         function newRequests() {
             if (new_request_button_status===1) {
                 document.getElementById('new_requests_div').style.display="block";
-                document.getElementById('recent_requests_div').style.display="none";
+                document.getElementById('approved_requests_div').style.display="none";
+                document.getElementById('rejected_requests_div').style.display="none";
                 document.getElementById('new_request_hostel_chip').className="top_panel_link_box_active";
-                if (recent_request_button_status===1) {
-                    document.getElementById('recent_request_chip').className="top_panel_link_box";
+                if (approved_request_button_status===1) {
+                    document.getElementById('approved_request_chip').className="top_panel_link_box";
+                }
+                if (rejected_request_button_status===1) {
+                    document.getElementById('rejected_request_chip').className="top_panel_link_box";
                 }
             }else {
                 showSnackBar("No New Requests !");
             }
         }
-        
-        function recentRequests() {
-            if (recent_request_button_status===1) {
+
+        //load approved requests
+        function approvedRequests() {
+            if (approved_request_button_status===1) {
                 document.getElementById('new_requests_div').style.display="none";
-                document.getElementById('recent_requests_div').style.display="block";
-                document.getElementById('recent_request_chip').className="top_panel_link_box_active";
+                document.getElementById('rejected_requests_div').style.display="none";
+                document.getElementById('approved_requests_div').style.display="block";
+                document.getElementById('approved_request_chip').className="top_panel_link_box_active";
                 if (new_request_button_status===1) {
                     document.getElementById('new_request_hostel_chip').className="top_panel_link_box";
                 }
+                if (rejected_request_button_status===1) {
+                    document.getElementById('rejected_request_chip').className="top_panel_link_box";
+                }
             }else {
-                showSnackBar("No Recently Handled Requests !");
-            }
-        }
-        
-        function allRequests() {
-            //all requests
-        }
-        
-        function changeSemester() {
-            if (confirm("Are you sure you want to change semester? Changing semester will result in move of all current room holder into past room holders.")) {
-                document.getElementById('loading').style.visibility="visible";
-                var xhr = new XMLHttpRequest();
-                xhr.open('POST', '/changeSemester');
-                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                xhr.onload = function() {
-                    document.getElementById('loading').style.visibility="hidden";
-                    const resp=JSON.parse(xhr.responseText);
-                    if (resp.code===1) {
-                        showSnackBar(resp.info+" Refreshing...");
-                        setTimeout(function () {
-                            refresh();
-                        },2000);
-                    }else {
-                        showSnackBar(resp.info);
-                    }
-                };
-                xhr.send("email="+userinfo.email);
+                showSnackBar("No Recently Approved Requests !");
             }
         }
 
+        //load rejected requests
+        function rejectedRequests() {
+            if (rejected_request_button_status===1) {
+                document.getElementById('new_requests_div').style.display="none";
+                document.getElementById('approved_requests_div').style.display="none";
+                document.getElementById('rejected_requests_div').style.display="block";
+                document.getElementById('rejected_request_chip').className="top_panel_link_box_active";
+                if (new_request_button_status===1) {
+                    document.getElementById('new_request_hostel_chip').className="top_panel_link_box";
+                }
+                if (approved_request_button_status===1) {
+                    document.getElementById('approved_request_chip').className="top_panel_link_box";
+                }
+            }else {
+                showSnackBar("No Recently Rejected Requests !");
+            }
+        }
+
+
+        //go to all requests
+        function allRequests() {
+            window.location.replace("/allrequests");
+        }
+
+
+        //add semester
+        function addSemester() {
+            let inp=document.getElementById('add_semester_name');
+            let sem_name=inp.value.trim();
+            if (sem_name==="") {
+                showSnackBar("Enter Semester Name!");
+            }else {
+                document.getElementById('loading').style.visibility = "visible";
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/addSemester');
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function() {
+                    let json=JSON.parse(xhr.responseText);
+                    if (json.code===1) {
+                        showSnackBar("Semester Added. refreshing list...");
+                        inp.value="";
+                        getSemesterInfo()
+                    }else {
+                        document.getElementById('loading').style.visibility = "hidden";
+                        showSnackBar(json.info);
+                    }
+                };
+                xhr.send("email="+userinfo.user.email+"&name="+sem_name);
+            }
+        }
+
+
+        function close_fees_info() {
+            document.getElementById('fees_info').style.display="none";
+        }
+
+        function getSemesterInfo() {
+            document.getElementById('loading').style.visibility = "visible";
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/getSemesters');
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                document.getElementById('loading').style.visibility = "hidden";
+                let json=JSON.parse(xhr.responseText);
+                if (json.code===1) {
+                    let sem_list=document.getElementById('current_semester_select');
+
+                    sem_list.innerHTML=`<option value="0" selected>Select</option>`;
+                    
+                    for (let i=0;i<json.semesters.length;i++) {
+                        if (json.semesters[i].status===2){
+                            document.getElementById('current_sem_text').innerText=json.semesters[i].name;
+                        }
+                        if (json.semesters[i].status===3) {
+                            let opt=document.createElement('option');
+                            opt.value=json.semesters[i].id;
+                            opt.innerText=json.semesters[i].name;
+                            sem_list.appendChild(opt);
+                        }
+                    }
+                }else {
+                    showSnackBar(json.info);
+                }
+            };
+            xhr.send("email="+userinfo.user.email);
+        }
+
+        //semester info
+        function semester_info() {
+            document.getElementById('semester_info').style.display="block";
+            document.getElementById('semester_info').style.height=(screen.height)+"px";
+            getSemesterInfo();
+        }
+
+
+        //semester info
+        function fees_info() {
+            document.getElementById('fees_info').style.display="block";
+            document.getElementById('fees_info').style.height=(screen.height)+"px";
+            getFeesInfo();
+        }
+
+        function getFeesInfo() {
+            document.getElementById('loading').style.visibility = "visible";
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/getFees');
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                document.getElementById('loading').style.visibility = "hidden";
+                let json=JSON.parse(xhr.responseText);
+                if (json.code===1) {
+                    let fees=json.fees;
+                    for (let i=0;i<fees.length;i++) {
+                        if (fees[i].id===1) {
+                            document.getElementById('single_bm_fees').value=fees[i].fees;
+                        }
+                        if (fees[i].id===2) {
+                            document.getElementById('double_bm_fees').value=fees[i].fees;
+                        }
+                        if (fees[i].id===3) {
+                            document.getElementById('single_phd_fees').value=fees[i].fees;
+                        }
+                        if (fees[i].id===4) {
+                            document.getElementById('double_phd_fees').value=fees[i].fees;
+                        }
+                        if (fees[i].id===5) {
+                            document.getElementById('security_fees').value=fees[i].fees;
+                        }
+                    }
+                }else {
+                    showSnackBar(json.info);
+                }
+            };
+            xhr.send("email="+userinfo.user.email);
+        }
+
+
+
+        function JSONToCSVConvertor(JSONData, ReportTitle, ShowLabel, fileName) {
+            //If JSONData is not an object then JSON.parse will parse the JSON string in an Object
+            var arrData = typeof JSONData != 'object' ? JSON.parse(JSONData) : JSONData;
+
+            var CSV = '';    
+            //Set Report title in first row or line
+
+            CSV += ReportTitle + '\r\n\n';
+
+            //This condition will generate the Label/Header
+            if (ShowLabel) {
+                var row = "";
+
+                //This loop will extract the label from 1st index of on array
+                for (var index in arrData[0]) {
+
+                    //Now convert each value to string and comma-seprated
+                    row += index + ',';
+                }
+
+                row = row.slice(0, -1);
+
+                //append Label row with line break
+                CSV += row + '\r\n';
+            }
+
+            //1st loop is to extract each row
+            for (var i = 0; i < arrData.length; i++) {
+                var row = "";
+
+                //2nd loop will extract each column and convert it in string comma-seprated
+                for (var index in arrData[i]) {
+                    row += '"' + arrData[i][index] + '",';
+                }
+
+                row.slice(0, row.length - 1);
+
+                //add a line break after each row
+                CSV += row + '\r\n';
+            }
+
+            if (CSV == '') {        
+                alert("Invalid data");
+                return;
+            }   
+
+            //this will remove the blank-spaces from the title and replace it with an underscore
+            fileName += ReportTitle.replace(/ /g,"_");   
+
+            //Initialize file format you want csv or xls
+            var uri = 'data:text/csv;charset=utf-8,' + escape(CSV);
+
+            // Now the little tricky part.
+            // you can use either>> window.open(uri);
+            // but this will not work in some browsers
+            // or you will not get the correct file extension    
+
+            //this trick will generate a temp <a /> tag
+            var link = document.createElement("a");    
+            link.href = uri;
+
+            //set the visibility hidden so it will not effect on your web-layout
+            link.style = "visibility:hidden";
+            link.download = fileName + ".csv";
+
+            //this part will append the anchor tag and remove it after automatic click
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+
+        function saveFees() {
+            let f1=document.getElementById('single_bm_fees').value.trim().toString();
+            let f2=document.getElementById('double_bm_fees').value.trim().toString();
+            let f3=document.getElementById('single_phd_fees').value.trim().toString();
+            let f4=document.getElementById('double_phd_fees').value.trim().toString();
+            let f5=document.getElementById('security_fees').value.trim().toString();
+
+            if (f1==="" || f2==="" || f3==="" || f4===""|| f5==="") {
+                showSnackBar("Fees value cannot be empty");
+            }else {
+                document.getElementById('loading').style.visibility = "visible";
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/saveFees');
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function() {
+                    document.getElementById('loading').style.visibility = "hidden";
+                    let json=JSON.parse(xhr.responseText);
+                    showSnackBar(json.info);
+                };
+            
+                xhr.send("email="+userinfo.user.email+"&f1="+f1+"&f2="+f2+"&f3="+f3+"&f4="+f4+"&f5="+f5);
+            }
+        }
+
+
+        function close_semester_info() {
+            document.getElementById('semester_info').style.display="none";
+        }
+
+        //unallocate all hostel rooms
+        function changeSemester() {
+            if (confirm("Are you sure you want to change semester? Changing semester will result in restarting of hostel allocation process removing all current room holders.")) {
+                const sem_sel=document.getElementById('current_semester_select');
+                const sem=sem_sel.options[sem_sel.selectedIndex].value.trim();
+                if (sem==="0") {
+                    showSnackBar("Select a semester!");
+                }else {
+                    document.getElementById('loading').style.visibility="visible";
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/changeSemester');
+                    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                    xhr.onload = function() {
+                        document.getElementById('loading').style.visibility="hidden";
+                        const resp=JSON.parse(xhr.responseText);
+                        if (resp.code===1) {
+                            showSnackBar(resp.info+" Refreshing in 3sec...");
+                            setTimeout(
+                                function() {
+                                    refresh()
+                                }, 3000);
+                        }else {
+                            showSnackBar(resp.info);
+                        }
+                    };
+                    xhr.send("email="+userinfo.user.email+"&id="+sem);
+                }
+            }
+        }
+
+        //show a message at the bottom of the screen
         function showSnackBar(message) {
             let snackbar= document.getElementById('snackbar');
             snackbar.innerText=message;
@@ -105,19 +387,32 @@
             setTimeout(function(){ snackbar.className = snackbar.className.replace("show", ""); }, 6000);
         }
 
+
+        function downloadApproved() {
+            JSONToCSVConvertor(approved_request_json, '', true, 'approved_requests');
+        }
+
+        function downloadRejected() {
+            JSONToCSVConvertor(rejected_request_json, '', true, 'rejected_requests');
+        }
+
+
+        //display the data on webpage
         function displayData() {
             document.getElementById('loading_div').style.display = "none";
-            document.getElementById('username').innerText = userinfo.name.trim();
+            document.getElementById('username').innerText = userinfo.user.name.trim();
             const _img = document.getElementById('picture');
             const newImg = new Image;
             newImg.onload = function () {
+                //load user profile image
                 _img.src = this.src;
             };
-            newImg.src = userinfo.picture;
+            newImg.src = userinfo.user.picture;
             document.getElementById('loading').style.visibility = "hidden";
 
             let new_requests_str="";
-            let recent_requests_str="";
+            let approved_request_str="";
+            let rejected_request_str="";
             for (let i=0;i<userinfo.requests.length;i++) {
                 let status;
                 let color;
@@ -129,123 +424,162 @@
                     color="#f3b54a";
                     hostel=userinfo.requests[i].prefered_hostel;
                     room_alloc=".";
-                    new_requests_str=new_requests_str+'<div class="previous_request_box">\n' +
-                        '                <div style="float: left;">\n' +
-                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 40px;" class="textFormatNormal">\n' +
-                        '                        <div style="float: left; font-size: 18px; width: 40%;">Request by </div>\n' +
-                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' + userinfo.requests[i].name+
-                        '                        </div>\n' +
-                        '                    </div>\n' +
-                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
-                        '                        <div style="float: left; font-size: 18px; width: 40%;"></div>\n' +
-                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 14px; color:'+color+';">\n' + userinfo.requests[i].email+
-                        '                        </div>\n' +
-                        '                    </div>\n' +
-                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
-                        '                        <div style="float: left; font-size: 18px; width: 40%;">Request date </div>\n' +
-                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' + userinfo.requests[i].request_time+
-                        '                        </div>\n' +
-                        '                    </div>\n' +
-                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
-                        '                        <div style="float: left; font-size: 18px; width: 40%;">Semester </div>\n' +
-                        '                        <div style="float: right;margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +userinfo.requests[i].semester+
-                        '                        </div>\n' +
-                        '                    </div>\n' +
-                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
-                        '                        <div style="float: left; font-size: 18px; width: 40%;">Hostel </div>\n' +
-                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +hostel+
-                        '                        </div>\n' +
-                        '                    </div>\n' +
-                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;margin-bottom: 40px;" class="textFormatNormal">\n' +
-                        '                        <div style="float: left; font-size: 18px; width: 40%;">Room Type </div>\n' +
-                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +userinfo.requests[i].type+
-                        '                        </div>\n' +
-                        '                    </div>\n' +
-                                            '<div style="font-size: 25px; width: 80%; float: left; margin-left: 10%; margin-bottom: 50px;">\n' +
-                                        '            <button style="width: 49%; border: 1px solid #303030; padding: 15px; background-color: #303030; border-radius: 10px; font-size: 20px; color: #34d870;" class="textFormatNormal" onclick="respondToRequest(1,'+userinfo.requests[i].id+')">Approve</button>\n' +
-                                                    '<button style="width: 49%; border: 1px solid #303030; padding: 15px; background-color: #303030; border-radius: 10px; font-size: 20px; color: #ff4848;" class="textFormatNormal" onclick="respondToRequest(0, '+userinfo.requests[i].id+')">Reject</button>\n' +
-                                        '        </div>'+
-                        '                </div>\n' +
-                        '            </div>';
+                    new_requests_str=new_requests_str+`
+                                    <div class="request_box">
+                                        <div style="float: left;">
+                                            <div style="width: 70%; float: left; margin-left: 15%; margin-top: 40px;" class="textFormatNormal">
+                                                <div style="float: left; font-size: 18px; width: 40%;">Request by </div>
+                                                <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:`+color+`;">`+userinfo.requests[i].name+`
+                                                </div>
+                                            </div>
+                                            <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">
+                                                <div style="float: left; font-size: 18px; width: 40%;"></div>
+                                                <div style="float: right; margin-left: 5%; width: 55%; font-size: 14px; color:`+color+`;"><a class="textFormatLink" style="color: `+color+`;" target="_blank" href="https://mail.google.com/mail/?view=cm&fs=1&to=`+userinfo.requests[i].email+`">`+userinfo.requests[i].email+`</a>
+                                                </div>
+                                            </div>
+                                            <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">
+                                                <div style="float: left; font-size: 18px; width: 40%;">Request date </div>
+                                                <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:`+color+`;">`+userinfo.requests[i].request_time+`
+                                                </div>
+                                            </div>
+                                            <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">
+                                                <div style="float: left; font-size: 18px; width: 40%;">Semester </div>
+                                                <div style="float: right;margin-left: 5%; width: 55%; font-size: 18px; color:`+color+`;">`+userinfo.requests[i].semester+`
+                                                </div>
+                                            </div>
+                                            <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">
+                                                <div style="float: left; font-size: 18px; width: 40%;">Hostel </div>
+                                                <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:`+color+`;">`+hostel+`
+                                                </div>
+                                            </div>
+                                            <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">
+                                                <div style="float: left; font-size: 18px; width: 40%;">Room Type </div>
+                                                <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:`+color+`;">`+userinfo.requests[i].type+`
+                                                </div>
+                                            </div>
+                                            <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">
+                                                <div style="float: left; font-size: 18px; width: 40%;">Distance </div>
+                                                <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:`+color+`;">`+userinfo.requests[i].distance+` Km
+                                                </div>
+                                            </div>
+                                            <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">
+                                                <div style="float: left; font-size: 18px; width: 40%; margin-top: 10px;">Allocate Hostel </div>
+                                                <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:`+color+`;">
+                                                    <select style="width: 240px; border: 1px solid #f0f1ef; padding: 10px; border-radius: 5px; font-family: comfortaa, sans-serif; font-size: 18px;" id="hostel_alloc_`+userinfo.requests[i].id+`">
+                                                        <option value="0" selected>Select</option>
+                                                        <option value="Boys Hostel H2">Boys Hostel H2</option>
+                                                        <option value="Girls Hostel H1">Girls Hostel H1</option>
+                                                        <option value="Boys Hostel">Boys Hostel</option>
+                                                        <option value="Girls Hostel">Girls Hostel</option>
+                                                        <option value="Married Hostel">Married Hostel</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px; margin-bottom: 40px;" class="textFormatNormal">
+                                                <div style="float: left; font-size: 18px; width: 40%; margin-top: 10px;">Allocate Room </div>
+                                                <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:`+color+`;">
+                                                    <input type="text" class="textFormatNormal" style="padding: 10px; font-size: 18px; border-radius: 5px; border: 1px solid #f0f1ef;" placeholder="Room number" id="room_alloc_`+userinfo.requests[i].id+`"><br>
+                                                </div>
+                                            </div>
+                                            <div style="font-size: 25px; width: 80%; float: left; margin-left: 10%; margin-bottom: 50px;">
+                                                <button style="width: 49%; border: 1px solid #303030; padding: 15px; background-color: #303030; border-radius: 10px; font-size: 20px; color: #34d870;" class="textFormatNormal" onclick="respondToRequest(1,`+userinfo.requests[i].id+`)">Approve</button>
+                                                <button style="width: 49%; border: 1px solid #303030; padding: 15px; background-color: #303030; border-radius: 10px; font-size: 20px; color: #ff4848;" class="textFormatNormal" onclick="respondToRequest(0,`+userinfo.requests[i].id+`)">Reject</button>
+                                            </div>
+                                        </div>
+                                    </div>`;
                 }else if (userinfo.requests[i].status===1 || userinfo.requests[i].status===3) {
-                    recent_request_button_status=1;
                     if (userinfo.requests[i].status===1) {
+                        approved_request_button_status=1;
                         status="Approved";
                         color="#34d870";
                         hostel=userinfo.requests[i].hostel_allocated;
                         room_alloc=userinfo.requests[i].room_allocated;
+                        approved_request_json.push(userinfo.requests[i]);
+                        approved_request_str+=`
+                                    <div style="height: 40px;">
+                                    <div style="width: 15%; float: left; text-align: center;  vertical-align: center; ">`+userinfo.requests[i].name+`<br><div style="font-size: 12px;"><a class="textFormatLink" target="_blank" href="https://mail.google.com/mail/?view=cm&fs=1&to=`+userinfo.requests[i].email+`">`+userinfo.requests[i].email+`</a></div></div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 10%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].request_time.split(" ")[0]+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 11%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].semester+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 13%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].hostel_allocated+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 12%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].type+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 5%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].room_allocated+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 8%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].distance+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 10%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].reviewed_on.split(" ")[0]+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 13%; float: left; text-align: center; vertical-align: center; padding-top: 5px;">`+userinfo.requests[i].reviewed_by_name+`</div>
+                                </div>
+                                <div style="border-bottom: 1px solid #e1e4dd;"></div>`;
                     }else if (userinfo.requests[i].status===3) {
+                        rejected_request_button_status=1;
                         status="Rejected";
                         color="#ec4444";
                         hostel=userinfo.requests[i].prefered_hostel;
                         room_alloc=".";
+                        rejected_request_json.push(userinfo.requests[i]);
+                        rejected_request_str+=`
+                                   <div style="height: 40px;">
+                                    <div style="width: 15%; float: left; text-align: center;  vertical-align: center; ">`+userinfo.requests[i].name+`<br><div style="font-size: 12px;"><a class="textFormatLink" target="_blank" href="https://mail.google.com/mail/?view=cm&fs=1&to=`+userinfo.requests[i].email+`">`+userinfo.requests[i].email+`</a>  </div></div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 10%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].request_time.split(" ")[0]+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 11%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].semester+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 13%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].prefered_hostel+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 12%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].type+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 5%; float: left; text-align: center; vertical-align: center; line-height: 40px;">.</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 8%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].distance+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 10%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].reviewed_on.split(" ")[0]+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 13%; float: left; text-align: center; vertical-align: center; padding-top: 5px;">`+userinfo.requests[i].reviewed_by_name+`</div>
+                                </div>
+                                <div style="border-bottom: 1px solid #e1e4dd;"></div>`;
                     }
-                    recent_requests_str+='<div class="previous_request_box">\n' +
-                        '                <div style="float: right; margin-top: 10px; margin-right: 10px; font-size: 18px; color:'+color+';"><b>'+status+'</b></div>\n' +
-                        '                <div style="float: left;">\n' +
-                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
-                        '                        <div style="float: left; font-size: 18px; width: 40%;">Request date </div>\n' +
-                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' + userinfo.requests[i].request_time+
-                        '                        </div>\n' +
-                        '                    </div>\n' +
-                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
-                        '                        <div style="float: left; font-size: 18px; width: 40%;">Semester </div>\n' +
-                        '                        <div style="float: right;margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +userinfo.requests[i].semester+
-                        '                        </div>\n' +
-                        '                    </div>\n' +
-                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
-                        '                        <div style="float: left; font-size: 18px; width: 40%;">Hostel </div>\n' +
-                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +hostel+
-                        '                        </div>\n' +
-                        '                    </div>\n' +
-                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
-                        '                        <div style="float: left; font-size: 18px; width: 40%;">Room Type </div>\n' +
-                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +userinfo.requests[i].type+
-                        '                        </div>\n' +
-                        '                    </div>\n' +
-                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
-                        '                        <div style="float: left; font-size: 18px; width: 40%;">Room Allocated </div>\n' +
-                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +room_alloc+
-                        '                        </div>\n' +
-                        '                    </div>\n' +
-                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
-                        '                        <div style="float: left; font-size: 18px; width: 40%;">Reviewed On </div>\n' +
-                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +userinfo.requests[i].reviewed_on+
-                        '                        </div>\n' +
-                        '                    </div>\n' +
-                        '                   <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px;" class="textFormatNormal">\n' +
-                        '                        <div style="float: left; font-size: 18px; width: 40%;">Reviewed by </div>\n' +
-                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 18px; color:'+color+';">\n' +userinfo.requests[i].reviewed_by_name+
-                        '                        </div>\n' +
-                        '                    </div>\n' +
-                        '                    <div style="width: 70%; float: left; margin-left: 15%; margin-top: 10px; margin-bottom: 40px;" class="textFormatNormal">\n' +
-                        '                        <div style="float: left; font-size: 18px; width: 40%;"></div>\n' +
-                        '                        <div style="float: right; margin-left: 5%; width: 55%; font-size: 14px; color:'+color+';">\n' +userinfo.requests[i].reviewed_by_email+
-                        '                        </div>\n' +
-                        '                    </div>\n' +
-                        '                </div>\n' +
-                        '            </div>';
                 }
             }
 
             document.getElementById('container_new_requests_div').innerHTML=new_requests_str;
-            document.getElementById('container_recent_requests_div').innerHTML=recent_requests_str;
+            if (approved_request_button_status===1) {
+                document.getElementById('container_approved_requests_div').innerHTML=approved_request_str;
+            }
+            if (rejected_request_button_status===1) {
+                document.getElementById('container_rejected_requests_div').innerHTML=rejected_request_str;
+            }
 
             if (new_request_button_status===1) {
                 document.getElementById('new_requests_div').style.display="block";
                 document.getElementById('new_request_hostel_chip').className="top_panel_link_box_active";
-                if (recent_request_button_status===1) {
-                    document.getElementById('recent_request_chip').className="top_panel_link_box";
+                if (approved_request_button_status===1) {
+                    document.getElementById('approved_request_chip').className="top_panel_link_box";
                 }
-            }else if (recent_request_button_status===1) {
-                document.getElementById('recent_requests_div').style.display="block";
-                document.getElementById('recent_request_chip').className="top_panel_link_box_active";
+                if (rejected_request_button_status===1) {
+                    document.getElementById('rejected_request_chip').className="top_panel_link_box";
+                }
+            }else if (approved_request_button_status===1) {
+                document.getElementById('approved_requests_div').style.display="block";
+                document.getElementById('approved_request_chip').className="top_panel_link_box_active";
+                if (rejected_request_button_status===1) {
+                    document.getElementById('rejected_request_chip').className="top_panel_link_box";
+                }
+            }else if (rejected_request_button_status===1) {
+                document.getElementById('rejected_requests_div').style.display="block";
+                document.getElementById('rejected_request_chip').className="top_panel_link_box_active";
             }else {
                 document.getElementById('nothing_to_show_div').style.display="block";
             }
         }
 
-
+        // https://developers.google.com/identity/sign-in/web/sign-in    for google signin
         function onSignIn(googleUser) {
             var profile = googleUser.getBasicProfile();
             var xhr = new XMLHttpRequest();
@@ -253,13 +587,12 @@
             xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
             xhr.onload = function() {
                 userinfo=JSON.parse(xhr.responseText);
-                console.log(xhr.responseText);
                 displayData();
             };
             xhr.send("email="+profile.getEmail());
         }
 
-
+        // https://developers.google.com/identity/sign-in/web/sign-in    for google signout
         function signOut() {
             document.getElementById('loading').style.visibility="visible";
             var auth2 = gapi.auth2.getAuthInstance();
@@ -291,15 +624,17 @@
 
 
 <div class="header">
-    <div style="float: left; margin-left: 1%;">
-        <div style="cursor: pointer; font-size: 20px; margin-top: 18px; float: left;" onclick="refresh()" class="textFormatNormal">Hostel Portal</div>
+    <div style="float: left; margin-left: 1%; width: 60%;">
+        <div style="cursor: pointer; font-size: 20px; margin-top: 18px; float: left; width: 20%;" onclick="refresh()" class="textFormatNormal">Hostel Portal</div>
 
-        <div style="float: right; margin-left:30px; margin-top: 10px;">
+        <div style="float: right; margin-left:2%; width: 78%;">
             <div class="top_panel_link_box_disable" id="new_request_hostel_chip" onclick="newRequests()">New Requests</div>
-            <div class="top_panel_link_box_disable" id="recent_request_chip" onclick="recentRequests()">Recent Requests</div>
+            <div class="top_panel_link_box_disable" id="approved_request_chip" onclick="approvedRequests()">Approved Requests</div>
+            <div class="top_panel_link_box_disable" id="rejected_request_chip" onclick="rejectedRequests()">Rejected Requests</div>
             <div class="top_panel_link_box" id="previous_request_chip" onclick="allRequests()">All Requests</div>
-            <div class="top_panel_link_box" id="change_semseter_chip" onclick="changeSemester()">Change Semester</div>
             <div class="top_panel_link_box" id="add_admin_chip" onclick="addAdmin()">Add Admin</div>
+            <div class="top_panel_link_box" id="semester_chip" onclick="semester_info()">Semesters</div>
+            <div class="top_panel_link_box" id="fees_chip" onclick="fees_info()">Fees</div>
         </div>
     </div>
 
@@ -324,15 +659,69 @@
     </div>
 
 
-    <div id="new_requests_div" style="border: 0px solid #e1e4dd; border-radius: 10px; width: 50%; margin-left: 25%;  margin-top: 70px; float: left;">
+    <div id="new_requests_div" style="border: 0px solid #e1e4dd; border-radius: 10px; width: 50%; margin-left: 25%;  margin-top: 10px; float: left;">
         <p style="text-align: center; font-size: 40px; " class="textFormatNormal">New Requests</p>
         <div id="container_new_requests_div" style="width: 100%;">
         </div>
     </div>
 
-    <div id="recent_requests_div" style="border: 0px solid #e1e4dd; border-radius: 10px; width: 50%; margin-left: 25%;  margin-top: 70px; float: left;">
-        <p style="text-align: center; font-size: 40px; " class="textFormatNormal">Recent Requests</p>
-        <div id="container_recent_requests_div" style="width: 100%;">
+    <div id="approved_requests_div" style="border: 0px solid #e1e4dd; border-radius: 10px; width: 95%; margin-left: 2.5%; float: left;">
+        <p style="text-align: center; font-size: 40px; " class="textFormatNormal">Approved Requests</p><div style="cursor: pointer;" onclick="downloadApproved()"><a class="textFormatLink">Download Excel File for Approved Requests</a></div>
+        <div style="width: 100%;">
+            <div class="request_box">
+                <div style="height: 40px;">
+                    <div style="width: 15%; float: left; text-align: center;  vertical-align: center; line-height: 40px;"><b>Name</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 10%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Request Date</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 11%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Semester</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 13%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Hostel</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 12%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Room Type</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 5%; float: left; text-align: center; vertical-align: center; line-height: 20px;"><b>Room Alloc</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 8%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Distance</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 10%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Reviewed On</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 13%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Reviewed By</b></div>
+                </div>
+                <div style="border: 1px solid #e1e4dd;"></div>
+
+                <div id="container_approved_requests_div" style="width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="rejected_requests_div" style="border: 0px solid #e1e4dd; border-radius: 10px; width: 95%; margin-left: 2.5%; float: left;">
+        <p style="text-align: center; font-size: 40px; " class="textFormatNormal">Rejected Requests</p><div style="cursor: pointer;" onclick="downloadRejected()"><a class="textFormatLink">Download Excel File for Rejected Requests</a></div>
+        <div style="width: 100%;">
+            <div class="request_box">
+                <div style="height: 40px;">
+                    <div style="width: 15%; float: left; text-align: center;  vertical-align: center; line-height: 40px;"><b>Name</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 10%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Request Date</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 11%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Semester</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 13%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Hostel</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 12%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Room Type</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 5%; float: left; text-align: center; vertical-align: center; line-height: 20px;"><b>Room Alloc</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 8%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Distance</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 10%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Reviewed On</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 13%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Reviewed By</b></div>
+                </div>
+                <div style="border: 1px solid #e1e4dd;"></div>
+
+                <div id="container_rejected_requests_div" style="width: 100%;"></div>
+            </div>
         </div>
     </div>
 
@@ -342,18 +731,57 @@
 </div>
 
 
+
 <div class="bottom_Panel" style="margin-top: 100px;">
     <!--        copyright    -->
     <div style="text-align: center; float: right; width: 100%;">
         <p class="textFormatNormal" style="font-size: 16px;">&copy 2019 Indraprastha Institute of Information Technology, Delhi</p>
     </div>
-    
-    <div style="float: right;">
-    </div>
 </div>
 
 
-
 <div id="snackbar"></div>
+
+<div style="width: 100%; background-color: #3030308f; position:relative;" id="semester_info">
+    <div style="background-color: #FFFFFF; width: 50%; position:absolute; margin-left: 20%; padding: 30px; border-radius: 10px; margin-top: 100px; margin-bottom: 100px;" class="textFormatNormal">
+        <div style="float: right; cursor: pointer;" onclick="close_semester_info()"><img src="../images/close.png" height="22" width="22"></div>
+        <div style="text-align: center; font-size: 25px;">Semesters</div><br><br>
+        <div id="current_sem_text" style="text-align: center; color: #1e9cb9; font-size: 30px;">No Current Semester Allocated</div><br><br><br>
+        <div style="margin-left: 10%;">Select current semester:
+            <select style="border: 1px solid #f0f1ef; width: 200px; padding: 10px; margin-left: 10px; border-radius: 5px; font-family: comfortaa, sans-serif; font-size: 18px;" id="current_semester_select">
+                <option value="0" selected>Select</option>
+            </select>
+            <button style="width: 100px; border: 0px solid; padding: 15px; cursor: pointer; background-color: #303030; margin-left: 15px; border-radius: 10px; font-size: 14px; color: #ffffff;" class="textFormatNormal" onclick="changeSemester()">Change</button>
+        </div>
+        <br><br>
+        <div style="margin-left: 10%;">Add new semester:
+            <input type="text" class="textFormatNormal" style="padding: 10px; width: 180px; font-size: 18px; border-radius: 5px; border: 1px solid #f0f1ef; margin-left: 55px;" placeholder="Semester name" id="add_semester_name">
+            <button style="width: 100px; border: 0px solid; padding: 15px; cursor: pointer; background-color: #303030; margin-left: 15px; border-radius: 10px; font-size: 14px; color: #ffffff;" class="textFormatNormal" onclick="addSemester()">Add</button>
+        </div>
+    </div>
+</div>
+
+<div style="width: 100%; background-color: #3030308f; position:relative;" id="fees_info">
+    <div style="background-color: #FFFFFF; width: 40%; position:absolute; margin-left: 30%; padding: 30px; border-radius: 10px; margin-top: 100px; margin-bottom: 100px;" class="textFormatNormal">
+        <div style="float: right; cursor: pointer;" onclick="close_fees_info()"><img src="../images/close.png" height="22" width="22"></div>
+        <div style="text-align: center; font-size: 25px;">Fees</div><br><br>
+        <div class="textFormatNormal" style="font-size: 18px;">Single Room- BTech/Mtech:
+            <input type="number" class="textFormatNormal" style="padding: 10px; width: 180px; font-size: 18px; border-radius: 5px; border: 1px solid #f0f1ef; margin-left: 55px;" placeholder="Fees" id="single_bm_fees">
+        </div><br>
+        <div class="textFormatNormal" style="font-size: 18px;">Double Room- BTech/Mtech:
+            <input type="number" class="textFormatNormal" style="padding: 10px; width: 180px; font-size: 18px; border-radius: 5px; border: 1px solid #f0f1ef; margin-left: 45px;" placeholder="Fees" id="double_bm_fees">
+        </div><br>
+        <div class="textFormatNormal" style="font-size: 18px;">Single Room- PHD:
+            <input type="number" class="textFormatNormal" style="padding: 10px; width: 180px; font-size: 18px; border-radius: 5px; border: 1px solid #f0f1ef; margin-left: 135px;" placeholder="Fees" id="single_phd_fees">
+        </div><br>
+        <div class="textFormatNormal" style="font-size: 18px;">Married Room:
+            <input type="number" class="textFormatNormal" style="padding: 10px; width: 180px; font-size: 18px; border-radius: 5px; border: 1px solid #f0f1ef; margin-left: 170px;" placeholder="Fees" id="double_phd_fees">
+        </div><br>
+        <div class="textFormatNormal" style="font-size: 18px;">Security:
+            <input type="number" class="textFormatNormal" style="padding: 10px; width: 180px; font-size: 18px; border-radius: 5px; border: 1px solid #f0f1ef; margin-left: 227px;" placeholder="Fees" id="security_fees">
+        </div><br><br>
+        <button style="width: 80%; border: 0px solid; padding: 15px; cursor: pointer; background-color: #303030; margin-left: 10%; margin-right: 10%; border-radius: 10px; font-size: 14px; color: #ffffff;" class="textFormatNormal" onclick="saveFees()">Save Fees</button>
+    </div>
+</div>
 </body>
 </html>
