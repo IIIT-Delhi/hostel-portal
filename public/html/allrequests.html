@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="google-signin-client_id" content="254987550321-ej72qqgf14aukermqq3aeass0br4vf3n.apps.googleusercontent.com">
+    <title>All Requests: Hostel Portal: Indraprastha Institute of Information Technology</title>
+    <link href="../stylesheets/style.css" rel="stylesheet" type="text/css" />
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+
+    <script>
+        let userinfo;
+        let results;
+        let tag="";
+
+        window.onload = function(){
+            var search_input = document.getElementById("search_student_filter");
+            search_input.addEventListener("keyup", function(event) {
+                // Number 13 is the "Enter" key on the keyboard
+                if (event.keyCode === 13) {
+                    // Cancel the default action, if needed
+                    event.preventDefault();
+                    // Trigger the button element with a click
+                    search_student();
+                }
+            });
+        };
+
+
+        function search_student() {
+            let data=[];
+            let search_input = document.getElementById("search_student_filter");
+            let search_term=search_input.value.trim();
+            if (search_term==="") {
+                showSnackBar("Enter Student name");
+            }else {
+                document.getElementById('loading').style.visibility = "visible";
+                for (let i=0;i<results.length;i++) {
+                    if (results[i].name.toUpperCase().match(search_term.toUpperCase())!==null) {
+                        data.push(results[i]);
+                    }
+                }
+                document.getElementById('loading').style.visibility = "hidden";
+                if (data.length!==0) {
+                    tag=search_term;
+                    document.getElementById('text_tag_filter').innerText=search_input.value.trim();
+                    document.getElementById('search_div_filter').style.display="none";
+                    document.getElementById('search_tag_filter').style.display="block";
+                    displayResultData(data);
+                }else {
+                    showSnackBar("No result found!")
+                }
+            }
+        }
+
+        function getSemesterInfo() {
+            document.getElementById('loading').style.visibility = "visible";
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/getSemesters');
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                document.getElementById('loading').style.visibility = "hidden";
+                let json=JSON.parse(xhr.responseText);
+                if (json.code===1) {
+                    let sem_list=document.getElementById('semester_type_filter');
+                    for (let i=0;i<json.semesters.length;i++) {
+                        let opt=document.createElement('option');
+                        opt.value=json.semesters[i].name;
+                        opt.innerText=json.semesters[i].name;
+                        sem_list.appendChild(opt);
+                    }
+                }else {
+                    showSnackBar(json.info);
+                }
+            };
+            xhr.send("email="+userinfo.user.email);
+        }
+
+
+        function close_tag() {
+            tag="";
+            document.getElementById('text_tag_filter').innerText="";
+            document.getElementById('search_div_filter').style.display="block";
+            document.getElementById('search_tag_filter').style.display="none";
+            displayResultData(userinfo.requests);
+        }
+
+        function filterResults() {
+            if (results.length!==0) {
+                let search=false;
+                let requests=false;
+                let hostels=false;
+                let semester=false;
+                let gender=false;
+                let roomtype=false;
+                let room_no=false;
+
+                const search_fil=tag;
+
+                const req_sel=document.getElementById('request_type_filter');
+                const req_fil=req_sel.options[req_sel.selectedIndex].value.trim();
+
+                const hos_sel=document.getElementById('hostel_type_filter');
+                const hos_fil=hos_sel.options[hos_sel.selectedIndex].value.trim();
+
+                const sem_sel=document.getElementById('semester_type_filter');
+                const sem_fil=sem_sel.options[sem_sel.selectedIndex].value.trim();
+
+                const gen_sel=document.getElementById('gender_type_filter');
+                const gen_fil=gen_sel.options[gen_sel.selectedIndex].value.trim();
+
+                const room_t_sel=document.getElementById('room_type_filter');
+                const room_t_fil=room_t_sel.options[room_t_sel.selectedIndex].value.trim();
+
+                const room_no_fil=document.getElementById('room_no_filter').value.trim();
+
+                if (tag.trim()!=="") {
+                    search=true;
+                }
+
+                if (req_fil!=="1") {
+                    requests=true;
+                } 
+                if (hos_fil!=="1") {
+                    hostels=true;
+                } 
+                if (sem_fil!=="1") {
+                    semester=true;
+                } 
+                if (gen_fil!=="1") {
+                    gender=true;
+                } 
+                if (room_t_fil!=="1") {
+                    roomtype=true;
+                } 
+                if (room_no_fil!=="") {
+                    room_no=true;
+                }
+
+                let data= [];
+                for (let i=0;i<results.length;i++) {
+                    let check=true;
+                    if (search) {
+                        if (results[i].name.toUpperCase().match(search_fil.toUpperCase())===null) {
+                            check=false;
+                        }
+                    }
+                    if (requests) {
+                        if (req_fil.trim()==="2") {
+                            if (results[i].status!==1 && results[i].status!==2) {
+                                check=false;
+                            }
+                        }else if (req_fil.trim()==="3") {
+                            if (results[i].status!==3 && results[i].status!==4) {
+                                check=false;
+                            }
+                        }
+                    }
+                    if (hostels) {
+                        if (results[i].hostel_allocated==null || results[i].hostel_allocated.trim().toLowerCase()!==hos_fil.trim().toLowerCase()) {
+                            check=false;
+                        }
+                    } 
+                    if (semester) {
+                        if (results[i].semester.trim().toLowerCase()!==sem_fil.trim().toLowerCase()){
+                            check=false;
+                        }
+                    }
+                    if (gender) {
+                        if (gen_fil.trim().toLowerCase()==="girls") {
+                            if (results[i].prefered_hostel.trim().toLowerCase()!=="girls hostel") {
+                                check=false;
+                            } 
+                        }else if (gen_fil.trim().toLowerCase()==="boys") {
+                            if (results[i].prefered_hostel.trim().toLowerCase()!=="boys hostel") {
+                                check=false;
+                            }
+                        }
+                    } 
+                    if (roomtype) {
+                        if (results[i].type.trim().toLowerCase()!==room_t_fil.trim().toLowerCase()) {
+                            check=false;
+                        }
+                    }
+                    if (room_no) {
+                        if (results[i].room_allocated==null || results[i].room_allocated.trim().toLowerCase()!==room_no_fil.trim().toLowerCase()) {
+                            check=false;
+                        }
+                    }
+
+                    if (check) {
+                        data.push(results[i]);
+                    }
+                }
+
+                displayResultData(data);
+            }else {
+                showSnackBar("No result to filter!");
+            }
+        }
+        
+        function clearFilters() {
+            document.getElementById('request_type_filter').options.selectedIndex=0;
+            document.getElementById('hostel_type_filter').options.selectedIndex=0;
+            document.getElementById('semester_type_filter').options.selectedIndex=0;
+            document.getElementById('gender_type_filter').options.selectedIndex=0;
+            document.getElementById('room_type_filter').options.selectedIndex=0;
+            document.getElementById('room_no_filter').value="";
+            filterResults();
+        }
+
+        function displayResultData(data) {
+            let req_str="";
+            for (let i=0;i<data.length;i++) {
+                let color="";
+                let hostel;
+                let room="";
+                if (data[i].status===1 || data[i].status===2) {
+                    color="#e2ffed";
+                    hostel=data[i].hostel_allocated;
+                    room=data[i].room_allocated;
+                }else if (data[i].status===3 || data[i].status===4) {
+                    color="#fff0f0";
+                    room=".";
+                    hostel=data[i].prefered_hostel;
+                }
+                req_str+=`
+                                <div style="height: 40px; background-color: `+color+`;">
+                                    <div style="width: 15%; float: left; text-align: center;  vertical-align: center; ">`+data[i].name+`<br><div style="font-size: 12px;">`+data[i].email+`</div></div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 10%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+data[i].request_time.split(" ")[0]+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 11%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+data[i].semester+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 13%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+hostel+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 12%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+data[i].type+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 5%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+room+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 8%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+data[i].distance+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 10%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+data[i].reviewed_on.split(" ")[0]+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 13%; float: left; text-align: center; vertical-align: center; padding-top: 5px;">`+data[i].reviewed_by_name+`</div>
+                                </div>
+                                <div style="border-bottom: 1px solid #e1e4dd;"></div>`;
+            }
+            document.getElementById('container_requests_div').innerHTML=req_str;
+        }
+
+        $(document).ready(function(){
+            document.getElementById('nothing_to_show_div').style.display="none";
+            document.getElementById('requests_div').style.display="none";
+            document.getElementById('search_tag_filter').style.display="none";
+        });
+
+        //display data on web page
+        function displayData() {
+            document.getElementById('loading_div').style.display = "none";
+            document.getElementById('username').innerText = userinfo.user.name.trim();
+            const _img = document.getElementById('picture');
+            const newImg = new Image;
+            newImg.onload = function () {
+                //load the profile image of user
+                _img.src = this.src;
+            };
+            newImg.src = userinfo.user.picture;
+            document.getElementById('loading').style.visibility = "hidden";
+            
+            if (userinfo.requests.length===0) {
+                document.getElementById('nothing_to_show_div').style.display="block";
+                document.getElementById('requests_div').style.display="none";
+            }else {
+                document.getElementById('nothing_to_show_div').style.display="none";
+                document.getElementById('requests_div').style.display="block";
+                let req_str="";
+                results=userinfo.requests;
+                for (let i=0;i<userinfo.requests.length;i++) {
+                    let color="";
+                    let hostel;
+                    let room="";
+                    if (userinfo.requests[i].status===1 || userinfo.requests[i].status===2) {
+                        color="#e2ffed";
+                        hostel=userinfo.requests[i].hostel_allocated;
+                        room=userinfo.requests[i].room_allocated;
+                    }else if (userinfo.requests[i].status===3 || userinfo.requests[i].status===4) {
+                        color="#fff0f0";
+                        room=".";
+                        hostel=userinfo.requests[i].prefered_hostel;
+                    }
+                    req_str+=`
+                                <div style="height: 40px; background-color: `+color+`;">
+                                    <div style="width: 15%; float: left; text-align: center;  vertical-align: center; ">`+userinfo.requests[i].name+`<br><div style="font-size: 12px;"><a class="textFormatLink" target="_blank" href="https://mail.google.com/mail/?view=cm&fs=1&to=`+userinfo.requests[i].email+`">`+userinfo.requests[i].email+`</a></div></div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 10%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].request_time.split(" ")[0]+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 11%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].semester+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 13%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+hostel+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 12%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].type+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 5%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+room+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 8%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].distance+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 10%; float: left; text-align: center; vertical-align: center; line-height: 40px;">`+userinfo.requests[i].reviewed_on.split(" ")[0]+`</div>
+                                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                                    <div style="width: 13%; float: left; text-align: center; vertical-align: center; padding-top: 5px;">`+userinfo.requests[i].reviewed_by_name+`</div>
+                                </div>
+                                <div style="border-bottom: 1px solid #e1e4dd;"></div>`;
+                }
+                document.getElementById('container_requests_div').innerHTML=req_str;
+            }
+        }
+
+        //show a message at bottom of screen
+        function showSnackBar(message) {
+            let snackbar= document.getElementById('snackbar');
+            snackbar.innerText=message;
+            snackbar.className="show";
+            setTimeout(function(){ snackbar.className = snackbar.className.replace("show", ""); }, 6000);
+        }
+
+
+        // https://developers.google.com/identity/sign-in/web/sign-in    for google signin
+        function onSignIn(googleUser) {
+            var profile = googleUser.getBasicProfile();
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/getAllRequests');
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                userinfo=JSON.parse(xhr.responseText);
+                displayData();
+                getSemesterInfo();
+            };
+            xhr.send("email="+profile.getEmail());
+        }
+
+
+        // https://developers.google.com/identity/sign-in/web/sign-in       for google signout
+        function signOut() {
+            document.getElementById('loading').style.visibility="visible";
+            var auth2 = gapi.auth2.getAuthInstance();
+            auth2.signOut();
+            auth2.disconnect();
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/logout');
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function() {
+                document.getElementById('loading').style.visibility="hidden";
+                const resp=JSON.parse(xhr.responseText);
+                if (resp.code===1) {
+                    window.location.replace("/");
+                }else {
+                    showSnackBar(resp.info);
+                }
+            };
+            xhr.send();
+        }
+
+        function refresh() {
+            window.location.replace("/allRequests");
+        }
+        
+        function Back() {
+            window.location.replace("/admin");
+        }
+    </script>
+</head>
+<body>
+<!--        //google signin-->
+<div class="g-signin2" data-onsuccess="onSignIn" style="display: none;"></div>
+
+
+<div class="header">
+    <div style="float: left; margin-left: 1%; width: 60%;">
+        <div style="cursor: pointer; font-size: 20px; margin-top: 18px; float: left; width: 20%;" onclick="refresh()" class="textFormatNormal">Hostel Portal</div>
+
+        <div style="float: right; margin-left:2%; width: 78%;">
+            <div class="top_panel_link_box_active" onclick="addAdmin()">All Requests</div>
+            <div class="top_panel_link_box" id="back_chip" onclick="Back()">Back to Admin Panel</div>
+        </div>
+    </div>
+
+    <!--        logout button-->
+    <div style="float: right; margin-top: 10px; margin-right: 3%;">
+        <div style="float: left;">
+            <div class="loading" style="float: left;" id="loading"></div>
+            <img style="float:left; height: 30px; width: 30px; border-radius: 50%; margin-left: 20px;" id="picture">
+            <div style="float: right; margin-top: 8px; margin-left: 10px;" class="textFormatNormal" id="username"></div>
+        </div>
+        <div style="float: right; cursor: pointer; margin-top: 8px; margin-left: 40px;" onclick="signOut()" class="textFormatLink">Logout</div>
+    </div>
+</div>
+
+
+
+<div class="mainBody">
+
+
+    <div id="loading_div" style="border: 1px solid #e1e4dd; border-radius: 10px; width: 70%; margin-left: 15%;  margin-top: 170px; float: left;">
+        <p style="text-align: center; font-size: 40px; " class="textFormatNormal">Please wait while we load your profile</p>
+    </div>
+
+    <div id="nothing_to_show_div" style="border: 1px solid #e1e4dd; border-radius: 10px; width: 70%; margin-left: 15%;  margin-top: 170px; float: left;">
+        <p style="text-align: center; font-size: 40px; " class="textFormatNormal">no recent or old requests found!</p>
+    </div>
+
+    <div id="requests_div" style="border: 0px solid #e1e4dd; border-radius: 10px; width: 95%; margin-left: 2.5%; float: left;">
+        <p style="text-align: center; font-size: 40px; " class="textFormatNormal">All Requests</p>
+        <div style="width: 100%">
+
+            <!--            search div-->
+            <div style="float: left;">
+                <div id="search_div_filter">
+                    <input type="text" class="textFormatNormal" id="search_student_filter" style="float: left; padding: 10px; font-size: 16px; margin-left: 20px; border-radius: 5px; border: 1px solid #f0f1ef;" placeholder="Search Student">
+                    <button id="search_button_filter" style="border: 0px solid #303030; padding: 10px; background-color: #f0f1ef; border-radius: 5px; margin-left: 20px; font-size: 16px; color: #000000; " class="textFormatNormal" onclick="search_student()">Search</button>
+                </div>
+                <div class="tags" id="search_tag_filter">
+                    <div id="text_tag_filter" style="float: left; padding: 10px 15px 10px 15px;"></div>
+                    <div style="float: right; margin-left: 10px;   padding-top: 9px; padding-bottom: 5px; cursor: pointer; padding-right: 10px;" id="close_tag_filter" onclick="close_tag()"><img src="../images/close.png" height="20" width="20"></div>
+                </div>
+            </div>
+
+
+
+<!--            filter div-->
+            <div class="textFormatNormal" style="float: left; margin-top: 30px; margin-left: 20px;">Filter:<br>
+                <select id="request_type_filter" style="width: 200px; border: 1px solid #f0f1ef; padding: 5px; border-radius: 5px; margin-top: 10px; font-family: comfortaa, sans-serif; font-size: 16px;">
+                    <option value="1" selected>All Requests</option>
+                    <option value="2">Approved Requests</option>
+                    <option value="3">Rejected Requests</option>
+                </select>
+                <select id="hostel_type_filter" style="width: 180px; border: 1px solid #f0f1ef; padding: 5px; border-radius: 5px; margin-left: 20px; font-family: comfortaa, sans-serif; font-size: 16px;">
+                    <option value="1" selected>All Hostels</option>
+                    <option value="Boys Hostel H2">Boys Hostel H2</option>
+                    <option value="Girls Hostel H1">Girls Hostel H1</option>
+                    <option value="Boys Hostel">Boys Hostel</option>
+                    <option value="Girls Hostel">Girls Hostel</option>
+                    <option value="Married Hostel">Married Hostel</option>
+                </select>
+
+                <select id="semester_type_filter" style="width: 180px; border: 1px solid #f0f1ef; padding: 5px; border-radius: 5px; margin-left: 20px; font-family: comfortaa, sans-serif; font-size: 16px;">
+                    <option value="1" selected>All Semester</option>
+                </select>
+                <select id="gender_type_filter" style="width: 180px; border: 1px solid #f0f1ef; padding: 5px; border-radius: 5px; margin-left: 20px; font-family: comfortaa, sans-serif; font-size: 16px;">
+                    <option value="1" selected>Boys and Girls</option>
+                    <option value="Boys">Boys</option>
+                    <option value="Girls">Girls</option>
+                </select>
+
+                <select id="room_type_filter" style="width: 180px; border: 1px solid #f0f1ef; padding: 5px; border-radius: 5px; margin-left: 20px; font-family: comfortaa, sans-serif; font-size: 16px;">
+                    <option value="1" selected>All Rooms Type</option>
+                    <option value="Double Room">Double Room</option>
+                    <option value="Single Room">Single Room</option>
+                    <option value="Married Room">Married Room</option>
+                </select>
+
+                <input type="text" class="textFormatNormal" id="room_no_filter" style="padding: 5px; font-size: 16px; margin-left: 20px; border-radius: 5px; border: 1px solid #f0f1ef;" placeholder="Room Number">
+                <br>
+                <button id="button_filter" style="border: 0px solid #303030; padding: 10px; background-color: #f0f1ef; border-radius: 5px; margin-top: 10px; font-size: 16px; color: #000000; " class="textFormatNormal" onclick="filterResults()">Apply Filter</button>
+                <button id="button_clear_filter" style="border: 0px solid #303030; padding: 10px; background-color: #f0f1ef; border-radius: 5px; margin-top: 10px; font-size: 16px; color: #000000; " class="textFormatNormal" onclick="clearFilters()">Clear Filter</button>
+            </div>
+
+
+
+            <div class="request_box">
+                <div style="height: 40px;">
+                    <div style="width: 15%; float: left; text-align: center;  vertical-align: center; line-height: 40px;"><b>Name</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 10%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Request Date</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 11%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Semester</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 13%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Hostel</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 12%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Room Type</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 5%; float: left; text-align: center; vertical-align: center; line-height: 20px;"><b>Room Alloc</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 8%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Distance</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 10%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Reviewed On</b></div>
+                    <div style="border: 1px solid #e1e4dd; border-radius: 25%; height: 100%; float: left;"></div>
+                    <div style="width: 13%; float: left; text-align: center; vertical-align: center; line-height: 40px;"><b>Reviewed By</b></div>
+                </div>
+                <div style="border: 1px solid #e1e4dd;"></div>
+
+                <div id="container_requests_div" style="width: 100%;">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="bottom_Panel" style="margin-top: 100px;">
+    <!--        copyright    -->
+    <div style="text-align: center; float: right; width: 100%;">
+        <p class="textFormatNormal" style="font-size: 16px;">&copy 2019 Indraprastha Institute of Information Technology, Delhi</p>
+    </div>
+</div>
+
+
+
+<div id="snackbar"></div>
+</body>
+</html>
